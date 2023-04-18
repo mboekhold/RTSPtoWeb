@@ -1,13 +1,15 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/deepch/vdk/format/mp4f"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-//HTTPAPIServerStreamHLSLLInit send client ts segment
+// HTTPAPIServerStreamHLSLLInit send client ts segment
 func HTTPAPIServerStreamHLSLLInit(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hlsll",
@@ -24,7 +26,13 @@ func HTTPAPIServerStreamHLSLLInit(c *gin.Context) {
 		return
 	}
 
-	if !RemoteAuthorization("HLS", c.Param("uuid"), c.Param("channel"), c.Param("token"), c.ClientIP()) {
+	token := ""
+	if len(c.Request.Header["Authorization"]) != 0 {
+		// Header will come in the form of Authorization: Token <token_value>
+		header := c.Request.Header["Authorization"][0]
+		token = strings.Fields(header)[1]
+	}
+	if !RemoteAuthorization("HLS", c.Param("uuid"), c.Param("channel"), token, c.ClientIP()) {
 		requestLogger.WithFields(logrus.Fields{
 			"call": "RemoteAuthorization",
 		}).Errorln(ErrorStreamUnauthorized.Error())
@@ -62,7 +70,7 @@ func HTTPAPIServerStreamHLSLLInit(c *gin.Context) {
 	}
 }
 
-//HTTPAPIServerStreamHLSLLM3U8 send client m3u8 play list
+// HTTPAPIServerStreamHLSLLM3U8 send client m3u8 play list
 func HTTPAPIServerStreamHLSLLM3U8(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hlsll",
@@ -96,7 +104,7 @@ func HTTPAPIServerStreamHLSLLM3U8(c *gin.Context) {
 	}
 }
 
-//HTTPAPIServerStreamHLSLLM4Segment send client ts segment
+// HTTPAPIServerStreamHLSLLM4Segment send client ts segment
 func HTTPAPIServerStreamHLSLLM4Segment(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hlsll",
@@ -161,7 +169,7 @@ func HTTPAPIServerStreamHLSLLM4Segment(c *gin.Context) {
 	}
 }
 
-//HTTPAPIServerStreamHLSLLM4Fragment send client ts segment
+// HTTPAPIServerStreamHLSLLM4Fragment send client ts segment
 func HTTPAPIServerStreamHLSLLM4Fragment(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hlsll",

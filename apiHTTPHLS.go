@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"strings"
 	"time"
 
 	"github.com/deepch/vdk/format/ts"
@@ -9,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//HTTPAPIServerStreamHLSM3U8 send client m3u8 play list
+// HTTPAPIServerStreamHLSM3U8 send client m3u8 play list
 func HTTPAPIServerStreamHLSM3U8(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hls",
@@ -26,7 +27,15 @@ func HTTPAPIServerStreamHLSM3U8(c *gin.Context) {
 		return
 	}
 
-	if !RemoteAuthorization("HLS", c.Param("uuid"), c.Param("channel"), c.Param("token"), c.ClientIP()) {
+	token := ""
+	if len(c.Request.Header["Authorization"]) != 0 {
+		// Header will come in the form of Authorization: Token <token_value>
+		header := c.Request.Header["Authorization"][0]
+		token = strings.Fields(header)[1]
+	}
+
+	if !RemoteAuthorization("HLS", c.Param("uuid"), c.Param("channel"), token, c.ClientIP()) {
+		c.IndentedJSON(500, Message{Status: 0, Payload: ErrorStreamUnauthorized.Error()})
 		requestLogger.WithFields(logrus.Fields{
 			"call": "RemoteAuthorization",
 		}).Errorln(ErrorStreamUnauthorized.Error())
@@ -60,7 +69,7 @@ func HTTPAPIServerStreamHLSM3U8(c *gin.Context) {
 	}
 }
 
-//HTTPAPIServerStreamHLSTS send client ts segment
+// HTTPAPIServerStreamHLSTS send client ts segment
 func HTTPAPIServerStreamHLSTS(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_hls",

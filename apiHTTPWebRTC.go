@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	webrtc "github.com/deepch/vdk/format/webrtcv3"
@@ -8,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//HTTPAPIServerStreamWebRTC stream video over WebRTC
+// HTTPAPIServerStreamWebRTC stream video over WebRTC
 func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	requestLogger := log.WithFields(logrus.Fields{
 		"module":  "http_webrtc",
@@ -25,7 +26,15 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		return
 	}
 
-	if !RemoteAuthorization("WebRTC", c.Param("uuid"), c.Param("channel"), c.Query("token"), c.ClientIP()) {
+	token := ""
+	if len(c.Request.Header["Authorization"]) != 0 {
+		// Header will come in the form of Authorization: Token <token_value>
+		header := c.Request.Header["Authorization"][0]
+		token = strings.Fields(header)[1]
+	}
+
+	if !RemoteAuthorization("WebRTC", c.Param("uuid"), c.Param("channel"), token, c.ClientIP()) {
+		c.IndentedJSON(500, Message{Status: 0, Payload: ErrorStreamUnauthorized.Error()})
 		requestLogger.WithFields(logrus.Fields{
 			"call": "RemoteAuthorization",
 		}).Errorln(ErrorStreamUnauthorized.Error())

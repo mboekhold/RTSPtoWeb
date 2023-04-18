@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gobwas/ws/wsutil"
@@ -13,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//HTTPAPIServerStreamMSE func
+// HTTPAPIServerStreamMSE func
 func HTTPAPIServerStreamMSE(c *gin.Context) {
 	conn, _, _, err := ws.UpgradeHTTP(c.Request, c.Writer)
 	if err != nil {
@@ -41,7 +42,14 @@ func HTTPAPIServerStreamMSE(c *gin.Context) {
 		return
 	}
 
-	if !RemoteAuthorization("WS", c.Param("uuid"), c.Param("channel"), c.Param("token"), c.ClientIP()) {
+	token := ""
+	if len(c.Request.Header["Authorization"]) != 0 {
+		// Header will come in the form of Authorization: Token <token_value>
+		header := c.Request.Header["Authorization"][0]
+		token = strings.Fields(header)[1]
+	}
+
+	if !RemoteAuthorization("WS", c.Param("uuid"), c.Param("channel"), token, c.ClientIP()) {
 		requestLogger.WithFields(logrus.Fields{
 			"call": "RemoteAuthorization",
 		}).Errorln(ErrorStreamUnauthorized.Error())
